@@ -1,19 +1,48 @@
 pico-8 cartridge // http://www.pico-8.com
-version 32
+version 33
 __lua__
 -- rejected
 -- a thoughtless labs experiment
 
 function _init()
-	
+	comp={
+	 {name="jimbo",x=80,y=90},
+	 {name="tank",x=20,y=90}
+	 }
+	current = 1
+	player={
+		name="you",x=5,y=60,dx=0,dy=0}
+		
+	gravity = 1.2
+	friction = 0.6
 end
 
 function _update60()
+	if btn(0) then player.dx-=1 end
+	if btn(1) then player.dx+=1 end
+	if btnp(2) then player.dy-=10 end
+	if btn(3) then player.dy+=1 end
+
+	player.dx *= friction
+	player.dy += gravity
 	
+	player.x += player.dx
+	player.y += player.dy
+	
+	player.x = mid(0,player.x,100)
+	player.y = mid(0,player.y,100)
+	
+	if player.y >=100 then
+		player.dy = 0
+	end
 end
 
 function _draw()
-	
+	cls()
+	print(player.dy)
+	print(player.y)
+	rectfill(player.x,player.y,player.x+5,player.y+5,10)
+	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
 end
 -->8
 -- to do list
