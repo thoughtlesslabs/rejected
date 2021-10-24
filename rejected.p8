@@ -13,7 +13,7 @@ function _init()
 		name="you",x=5,y=60,dx=0,dy=0}
 	
 	ball={
-		x=50,y=10,dx=0,dy=0}
+		x=60,y=10,dx=0,dy=0}
 		
 	gravity = 0.9
 	friction = 0.6
@@ -29,10 +29,12 @@ end
 
 function _draw()
 	cls()
-	print(player.dy)
-	print(player.y)
+	print(nextx)
+	print(hitboxx)
 	spr(1,player.x,player.y)
 	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
+	rect(hitboxx,hitboxy,hitboxx+7,hitboxy+10,5)
+	rect(ballhbx,ballhby,ballhbx+8,ballhby+8,5)
 	spr(17,ball.x,ball.y)
 end
 
@@ -41,7 +43,10 @@ function moveplayer()
 	if btn(1) then player.dx+=1 end
 	if btnp(2) then player.dy-=10 end
 	if btn(3) then player.dy+=1 end
-
+	
+	hitboxy = player.y+1
+	hitboxx = player.x-1
+	
 	player.dx *= friction
 	player.dy += gravity
 	
@@ -50,7 +55,8 @@ function moveplayer()
 	
 	player.x = mid(0,player.x,100)
 	player.y = mid(0,player.y,100)
-	
+
+
 	if player.y >=100 then
 		player.dy = 0
 	end
@@ -61,7 +67,7 @@ end
 function moveai(cx,cy)
 	local speed,angle,ccx,ccy
 	co = comp[current]
-	speed = 0.5
+	speed = 1
 	
 	ccx = cx - co.x
 	ccy = cy - co.y
@@ -69,34 +75,56 @@ function moveai(cx,cy)
 	angle = atan2(ccx,ccy)
 	
 	co.x += cos(angle)*speed
-	if ccy < 50 and not jumping then
+	if abs(ccy) < 10 and abs(ccx) < 10 and not jumping then
+		co.dy -= 5
+		co.y += sin(angle)*speed
 		jumping = true
-		co.dy -=1
-  co.y += sin(angle)*speed
 	end
 
 	co.dy += gravity
 	co.y += co.dy
-	co.x = mid(0,co.x,90)
-	co.y = mid(0,co.y,90)
+	co.x = mid(0,co.x,100)
+	co.y = mid(0,co.y,100)
 	
 	if co.y >=100 then
 		co.dy = 0
+		jumping = false
 	end
+
 end
 
 function moveball()
+ ball.dx *= 0.9
  ball.dy += gravity
-	
+
 	ball.x += ball.dx
 	ball.y += ball.dy
 	
-	ball.x = mid(0,ball.x,50)
-	ball.y = mid(0,ball.y,50)
+	-- hitbox visual for testing
+	ballhbx = ball.x-1
+	ballhby = ball.y+1
 	
-	if ball.y >=100 then
-		ball.dy -= ball.dy
+	nextx = ball.x
+	nexty = ball.y
+	
+	if flr(nextx) == flr(hitboxx) then
+		ball.dx += 2
+		ball.dy += 2
 	end
+	
+	if nexty >=100 then
+		ball.dy = -ball.dy*0.95
+	end
+	if nextx <=0 or nextx >=100 then
+		ball.dx =  -ball.dx
+	end
+	
+	
+
+	ball.x = mid(0,ball.x,100)
+	ball.y = mid(0,ball.y,100)
+
+
 end
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
