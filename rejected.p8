@@ -10,7 +10,7 @@ function _init()
 	 {name="tank",x=20,y=100,dx=0,dy=0}
 	 }
 	player={
-		name="you",x=5,y=60,dx=0,dy=0}
+		name="you",x=5,y=60,dx=0,dy=0,jump=false}
 	
 	ball={
 		x=60,y=10,dx=0,dy=0}
@@ -29,7 +29,7 @@ end
 
 function _draw()
 	cls()
-	print(nextx)
+	print(player.jump)
 	print(hitboxx)
 	spr(1,player.x,player.y)
 	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
@@ -41,7 +41,7 @@ end
 function moveplayer()
 	if btn(0) then player.dx-=1 end
 	if btn(1) then player.dx+=1 end
-	if btnp(2) then player.dy-=10 end
+	if btnp(2) and not player.jump then player.dy-=10 player.jump = true end
 	if btn(3) then player.dy+=1 end
 	
 	hitboxy = player.y+1
@@ -53,12 +53,12 @@ function moveplayer()
 	player.x += player.dx
 	player.y += player.dy
 	
-	player.x = mid(0,player.x,100)
+	player.x = mid(0,player.x,120)
 	player.y = mid(0,player.y,100)
-
 
 	if player.y >=100 then
 		player.dy = 0
+		player.jump = false
 	end
 end
 -->8
@@ -94,37 +94,75 @@ function moveai(cx,cy)
 end
 
 function moveball()
- ball.dx *= 0.9
- ball.dy += gravity
-
-	ball.x += ball.dx
-	ball.y += ball.dy
+ ball.dx *= 0.8
+ ball.dy += 0.8
 	
 	-- hitbox visual for testing
 	ballhbx = ball.x-1
 	ballhby = ball.y+1
 	
-	nextx = ball.x
-	nexty = ball.y
+
 	
-	if flr(nextx) == flr(hitboxx) then
-		ball.dx += 2
-		ball.dy += 2
-	end
+-- if hitboxcheck(nextx,nexty,player.x,player.y) then
+-- if ball_deflection(nextx,nexty,ball.dx,ball.dy,player.x,player.y) then
+--		ball.dx = -ball.dx
+--	else
+--
+--	end
+--	end
+	ball.x += ball.dx
+	ball.y += ball.dy
+	
+		nextx = ball.x
+	nexty = ball.y
 	
 	if nexty >=100 then
 		ball.dy = -ball.dy*0.95
 	end
-	if nextx <=0 or nextx >=100 then
+	if nextx <=0 or nextx >=120 then
 		ball.dx =  -ball.dx
 	end
-	
-	
 
-	ball.x = mid(0,ball.x,100)
+	ball.x = mid(0,ball.x,120)
 	ball.y = mid(0,ball.y,100)
+end
 
+--deflect ball using slope
+function ball_deflection(bx,by,bdx,bdy,tx,ty,tw,th)
+	--calculate slope
+	local slp = bdy / bdx
+	local cx, cy
+	tx = player.x+8
+	ty = player.y+8
+	if bdx == 0 then
+		return false
+	elseif bdy == 0 then
+		return true
+	elseif slp > 0 and bdx > 0 then
+			cx = tx-bx
+			cy = ty-by
+			return cx > 0 and cy/cx < slp
+	elseif slp < 0 and bdx > 0 then
+			cx = tx - bx
+			cy = ty + th - by
+			return cx > 0 and cy/cx >= slp
+	elseif slp > 0 and bdx < 0 then
+			cx = tx + tw - bx
+			cy = ty + th - by
+			return cx < 0 and cy/cx <= slp
+	else
+			cx = tx + tw - bx
+			cy = ty -by
+			return cx < 0 and cy/cx >= slp
+	end
+end
 
+function hitboxcheck(bx,by,px,py)
+	if by+8 > py+8 then	return false end
+	if by+8 < py then return false end
+	if bx-8 > px+8 then	return false end
+	if bx+8 < px then return false end
+	return true
 end
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
