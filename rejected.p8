@@ -19,22 +19,22 @@ function _init()
 	friction = 0.6
 	jumping = false
 	current = 1
+	debug = ""
 end
 
 function _update60()
 	moveplayer()
 	moveai(ball.x,ball.y)
-	moveball()
+	moveball(player.x,player.y)
 end
 
 function _draw()
 	cls()
-	print(nextx)
-	print(hitboxx)
 	spr(1,player.x,player.y)
 	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
-	rect(hitboxx,hitboxy,hitboxx+7,hitboxy+10,5)
-	rect(ballhbx,ballhby,ballhbx+8,ballhby+8,5)
+	rect(hitboxx,hitboxy,hitboxx+7,hitboxy+10,phbcol)
+	rect(aiboxx,aiboxy,aiboxx+7,aiboxy+10,aihbcol)
+	rect(ballhbx,ballhby,ballhbx+8,ballhby+8,ballhbcol)
 	spr(17,ball.x,ball.y)
 end
 
@@ -83,6 +83,10 @@ function moveai(cx,cy)
 
 	co.dy += gravity
 	co.y += co.dy
+	
+	aiboxx = co.x
+	aiboxy = co.y
+	
 	co.x = mid(0,co.x,100)
 	co.y = mid(0,co.y,100)
 	
@@ -101,15 +105,21 @@ function moveball()
 	ball.y += ball.dy
 	
 	-- hitbox visual for testing
-	ballhbx = ball.x-1
-	ballhby = ball.y+1
+	ballhbx = ball.x
+	ballhby = ball.y
 	
 	nextx = ball.x
 	nexty = ball.y
 	
-	if flr(nextx) == flr(hitboxx) then
-		ball.dx += 2
-		ball.dy += 2
+	if checkcollision(ball.x,ball.y) then
+		ball.dx += 10
+		phbcol = 8
+		aihbcol = 8
+		ballhbcol = 8
+	else
+		phbcol = 7
+		aihbcol = 7
+		ballhbcol = 7
 	end
 	
 	if nexty >=100 then
@@ -118,12 +128,20 @@ function moveball()
 	if nextx <=0 or nextx >=100 then
 		ball.dx =  -ball.dx
 	end
-	
-	
 
 	ball.x = mid(0,ball.x,100)
 	ball.y = mid(0,ball.y,100)
+end
 
+function checkcollision(bx,by)
+	return not (bx>player.x+8
+										or bx+8<player.x
+										or by > player.y+8
+										or by+8 < player.y)
+
+end
+
+function calcslope()
 
 end
 __gfx__
