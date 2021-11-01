@@ -18,7 +18,7 @@ function _init()
 	-- init ball
 	ball={
 		x=60,y=10,dx=0,dy=0,r=4,
-		g=0.2,f=0.95}
+		g=0.2,f=0.95,ang=1}
 	
 	-- defaults
 	shake = 0 
@@ -124,43 +124,64 @@ function moveball()
  ball.dx *= ball.f
  ball.dy += ball.g
 
-	ball.x += ball.dx
-	ball.y += ball.dy
-	
 	-- hitbox visual for testing
 	ballhbx = ball.x+ball.r
 	ballhby = ball.y+ball.r
 	
-	nextx = ball.x
-	nexty = ball.y
+	nextx = ball.x+ball.dx
+	nexty = ball.y+ball.dy
 	
 	if checkcollision(ball.x,ball.y) then
-	--		if calcslope(ball.x,ball.y,ball.dx,ball.dy) then
-	shake = 0.1
+		if calcslope(ball.x,ball.y,ball.dx,ball.dy) then
+			ball.dx = -ball.dx
+			if ball.x < player.x+4 then
+				nextx=player.x-ball.r
+			else
+				nextx=player.x+8+ball.r
+			end
+		else
+			nexty=player.y-ball.r
+			if abs(player.dx)>2 then
+				if sign(player.x)==sign(ball.dx) then
+					setang(ball,mid(0,ball.ang-1,2))
+					else
+						if ball.ang==2 then
+							ball.dx=-ball.dx
+						else
+							setang(ball,mid(0,ball.ang+1,2))
+						end
+					end
+				end
+			end
+		end
 	-- change hitbox color
-		phbcol = 8
-		aihbcol = 8
-		ballhbcol = 8
-	else
-	-- hitbox default color
-		phbcol = 7
-		aihbcol = 7
-		ballhbcol = 7
-	end
+			phbcol = 8
+			aihbcol = 8
+			ballhbcol = 8
+--			shake=0.1
+--	else
+--	-- hitbox default color
+--		phbcol = 7
+--		aihbcol = 7
+--		ballhbcol = 7
+--	end
+
 	
 	-- check if ball hit wall
 	if nexty >=100 then
 		ball.dy = -ball.dy*ball.f
-		shake=0.1
+--		shake=0.1
 	end
 	if nextx <=0 or nextx >=100 then
 		ball.dx =  -ball.dx
-		shake=0.1
+--		shake=0.1
 	end
+	
+	
 
 	-- move ball within frame
-	ball.x = mid(0,ball.x,100)
-	ball.y = mid(0,ball.y,100)
+	ball.x = mid(0,nextx,100)
+	ball.y = mid(0,nexty,100)
 end
 
 function checkcollision(bx,by)
@@ -183,7 +204,7 @@ function checkcollision(bx,by)
 										or by+ball.r < colchecky)
 end
 
-function calcslope(bx,by,bdx,bdy,tx,ty,tw,th)
+function calcslope(bx,by,bdx,bdy)
 	--calculate slope
 	local slp = bdy / bdx
 	local cx, cy
@@ -192,21 +213,45 @@ function calcslope(bx,by,bdx,bdy,tx,ty,tw,th)
 	elseif bdy == 0 then
 		return true
 	elseif slp > 0 and bdx > 0 then
-			cx = tx-bx
-			cy = ty-by
+			cx = player.x-bx
+			cy = player.y-by
 			return cx > 0 and cy/cx < slp
 	elseif slp < 0 and bdx > 0 then
-			cx = tx - bx
-			cy = ty + th - by
+			cx = player.x - bx
+			cy = player.y + 8 - by
 			return cx > 0 and cy/cx >= slp
 	elseif slp > 0 and bdx < 0 then
-			cx = tx + tw - bx
-			cy = ty + th - by
+			cx = player.x + 8 - bx
+			cy = player.y + 8 - by
 			return cx < 0 and cy/cx <= slp
 	else
-			cx = tx + tw - bx
-			cy = ty -by
+			cx = player.x + 8 - bx
+			cy = player.y -by
 			return cx < 0 and cy/cx >= slp
+	end
+end
+
+function setang(bl,ang)
+ bl.ang=ang
+	if ang==2 then
+		bl.dx=0.50*sign(bl.dx)
+		bl.dy=1.30*sign(bl.dx)
+	elseif ang==0 then
+		bl.dx=1.30*sign(bl.dx)
+		bl.dy=0.50*sign(bl.dx)
+	else
+		bl.dx=1*sign(bl.dx)
+		bl.dy=1*sign(bl.dx)
+	end
+end
+
+function sign(n)
+ if n<0 then
+ 	return -1
+ elseif n>0 then
+ 	return 1
+ else
+ 	return 0
 	end
 end
 -->8
