@@ -35,6 +35,7 @@ end
 
 function _draw()
 	cls()
+	drawbackground()
 	print(debug)
 	spr(1,player.x,player.y)
 	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
@@ -67,6 +68,18 @@ function moveplayer()
 		player.dy = 0
 		player.j = false
 	end
+end
+
+function drawbackground()
+	rectfill(0,0,128,100,12)
+	rectfill(0,100,128,128,4)
+	rectfill(1,75,3,90,5)
+	line(3,85,10,85,5)
+	rectfill(0,80,1,110,5)
+	rectfill(126,80,127,110,5)
+	rectfill(124,75,126,90,5)
+	rectfill(124,75,126,90,5)
+	line(117,85,124,85,5)
 end
 -->8
 -- computer
@@ -138,9 +151,11 @@ function moveball()
 	-- check if ball hit wall
 	if nexty >=100 then
 		ball.dy = -ball.dy*ball.f
+		shake=0.1
 	end
 	if nextx <=0 or nextx >=100 then
 		ball.dx =  -ball.dx
+		shake=0.1
 	end
 
 	-- move ball within frame
