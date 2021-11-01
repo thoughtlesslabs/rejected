@@ -30,6 +30,7 @@ end
 
 function _draw()
 	cls()
+	print(debug)
 	spr(1,player.x,player.y)
 	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
 	rect(hitboxx,hitboxy,hitboxx+7,hitboxy+10,phbcol)
@@ -134,10 +135,23 @@ function moveball()
 end
 
 function checkcollision(bx,by)
-	return not (bx>player.x+8
-										or bx+8<player.x
-										or by > player.y+8
-										or by+8 < player.y)
+	-- check player closeness
+	cmxc = bx-comp[current].x
+	cmyc = by-comp[current].y
+	plxc = bx-player.x
+	plyc = by-player.y
+	
+	if abs(cmxc) < abs(plxc) or abs(cmyc) < abs(plyc) then
+		colcheckx = comp[current].x
+		colchecky = comp[current].y
+	elseif abs(cmxc)>abs(plxc) or abs(cmyc)>abs(plyc) then
+		colcheckx = player.x
+		colchecky = player.y
+	end
+	return not (bx>colcheckx+8
+										or bx+8<colcheckx
+										or by > colchecky+8
+										or by+8 < colchecky)
 
 end
 
