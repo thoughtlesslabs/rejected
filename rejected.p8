@@ -36,7 +36,7 @@ end
 function _draw()
 	cls()
 	drawbackground()
-	print(debug)
+	print(ball.ang)
 	spr(1,player.x,player.y)
 	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
 	rect(hitboxx,hitboxy,hitboxx+7,hitboxy+10,phbcol)
@@ -91,7 +91,7 @@ function moveai(cx,cy)
 	
 	ccx = cx - co.x
 	ccy = cy - co.y
-	debug = ccy
+
 	angle = atan2(ccx,ccy)
 	
 	co.x += cos(angle)*speed
@@ -131,6 +131,17 @@ function moveball()
 	nextx = ball.x+ball.dx
 	nexty = ball.y+ball.dy
 	
+	-- check if ball hit wall
+	if nexty >=100 then
+		ball.dy = -ball.dy*ball.f
+	--		shake=0.1
+	end
+	if nextx <=0 or nextx >=100 then
+		ball.dx =  -ball.dx
+	--		shake=0.1
+	end
+	
+	
 	if checkcollision(ball.x,ball.y) then
 		if calcslope(ball.x,ball.y,ball.dx,ball.dy) then
 			ball.dx = -ball.dx
@@ -154,30 +165,6 @@ function moveball()
 				end
 			end
 		end
-	-- change hitbox color
-			phbcol = 8
-			aihbcol = 8
-			ballhbcol = 8
---			shake=0.1
---	else
---	-- hitbox default color
---		phbcol = 7
---		aihbcol = 7
---		ballhbcol = 7
---	end
-
-	
-	-- check if ball hit wall
-	if nexty >=100 then
-		ball.dy = -ball.dy*ball.f
---		shake=0.1
-	end
-	if nextx <=0 or nextx >=100 then
-		ball.dx =  -ball.dx
---		shake=0.1
-	end
-	
-	
 
 	-- move ball within frame
 	ball.x = mid(0,nextx,100)
