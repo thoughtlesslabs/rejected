@@ -7,18 +7,28 @@ __lua__
 function _init()
 	-- init ai players
 	comp={
-	 {name="jimbo",x=80,y=100,dx=0,dy=0,
-	 	g=0.8,f=0.9,j=false},
-	 {name="tank",x=20,y=100,dx=0,dy=0,
-	 	g=0.8,j=false}}
+	 {name="jimbo",x=80,y=100,
+	 	h=8,w=8,dx=0,dy=0,g=0.5,
+	 	f=0.7,j=false,jh=25,boost=6},
+	 {name="tank",x=20,y=100,
+	 	h=8,w=8,dx=0,dy=0,g=0.5,
+	 	f=0.9,j=false},jh=20}
 	-- init player
 	player={
-		name="you",x=5,y=60,dx=0,dy=0,
-		g=0.5,f=0.7,j=false}
+		name="you",x=5,y=60,
+		h=8,w=8,dx=0,dy=0,g=0.5,
+		f=0.7,j=false}
 	-- init ball
 	ball={
 		x=60,y=10,dx=0,dy=0,r=4,
-		g=0.2,f=0.95,ang=1}
+		g=0.05,f=0.98}
+	
+	rims={
+		{name="left",x=3,y=85,
+			h=1,w=8},
+		{name="right",x=117,y=85,
+			h=1,w=8}}
+	
 	
 	-- defaults
 	shake = 0 
@@ -36,12 +46,15 @@ end
 function _draw()
 	cls()
 	drawbackground()
-	print(ball.ang)
+	print(debug)
+--	print(debug2)
+--	print(debug3)
 	spr(1,player.x,player.y)
-	rectfill(comp[current].x,comp[current].y,comp[current].x+5,comp[current].y+5,5)
-	rect(hitboxx,hitboxy,hitboxx+7,hitboxy+10,phbcol)
-	rect(aiboxx,aiboxy,aiboxx+7,aiboxy+10,aihbcol)
-	circ(ballhbx,ballhby,ball.r,ballhbcol)
+	spr(2,comp[current].x,comp[current].y)
+--	rect(hitboxx,hitboxy,hitboxx+8,hitboxy+8,phbcol)
+--	rect(aiboxx,aiboxy,aiboxx+8,aiboxy+8,aihbcol)
+--	circ(ballhbx,ballhby,ball.r,ballhbcol)
+	print(ballhbx,ballhbx-6,ballhby-10,5)
 	spr(17,ball.x,ball.y)
 end
 
@@ -50,7 +63,6 @@ function moveplayer()
 	if btn(1) then player.dx+=1 end
 	if btnp(2) and not player.j then player.j = true player.dy-=6 end
 	if btn(3) then player.dy+=1 end
-	
 	hitboxy = player.y
 	hitboxx = player.x
 	
@@ -60,9 +72,8 @@ function moveplayer()
 	player.x += player.dx
 	player.y += player.dy
 	
-	player.x = mid(0,player.x,100)
+	player.x = mid(0,player.x,120)
 	player.y = mid(0,player.y,100)
-
 
 	if player.y >=100 then
 		player.dy = 0
@@ -71,15 +82,15 @@ function moveplayer()
 end
 
 function drawbackground()
-	rectfill(0,0,128,100,12)
-	rectfill(0,100,128,128,4)
+	rectfill(0,0,128,105,12)
+	rectfill(0,105,128,128,4)
 	rectfill(1,75,3,90,5)
-	line(3,85,10,85,5)
+	line(rims[1].x,rims[1].y,10,85,hitrimcol)
 	rectfill(0,80,1,110,5)
 	rectfill(126,80,127,110,5)
 	rectfill(124,75,126,90,5)
 	rectfill(124,75,126,90,5)
-	line(117,85,124,85,5)
+	line(rims[2].x,rims[2].y,124,85,5)
 end
 -->8
 -- computer
@@ -87,30 +98,30 @@ end
 function moveai(cx,cy)
 	local speed,angle,ccx,ccy
 	co = comp[current]
-	speed = 1
+	speed = 2
 	
-	ccx = cx - co.x
-	ccy = cy - co.y
+	ccx = cx+ball.r - co.x
+	ccy = cy+ball.r - co.y
 
 	angle = atan2(ccx,ccy)
-	
-	co.x += cos(angle)*speed
-	if abs(ccy) < 10 and abs(ccx) < 10 and not co.j then
-		if ccy < 0 then
-			co.dy -= 6
-			co.y += sin(angle)*speed
-			co.j = true
-		end
+		debug=co.dx
+	co.dx += cos(angle)*speed
+	if abs(ccy) < co.jh and not co.j then
+		co.dy -= co.boost
+		co.y += sin(angle)*speed
+		co.j = true
 	end
 
 	co.dy += co.g
 	co.dx *= co.f
+
+	co.x += co.dx
 	co.y += co.dy
-	
+
 	aiboxx = co.x
 	aiboxy = co.y
 	
-	co.x = mid(0,co.x,100)
+	co.x = mid(0,co.x,120)
 	co.y = mid(0,co.y,100)
 	
 	if co.y >=100 then
@@ -121,126 +132,76 @@ function moveai(cx,cy)
 end
 
 function moveball()
- ball.dx *= ball.f
- ball.dy += ball.g
 
-	-- hitbox visual for testing
-	ballhbx = ball.x+ball.r
-	ballhby = ball.y+ball.r
-	
 	nextx = ball.x+ball.dx
 	nexty = ball.y+ball.dy
+
+	if checkcollision(nextx,nexty,player) then
+		calc_collision(ball,player)
+	elseif checkcollision(nextx,nexty,comp[current]) then
+		calc_collision(ball,comp[current])
+	elseif checkcollision(nextx,nexty,rims[1]) then
+		ball.dy = -ball.dy
+		ball.dx = -ball.dx
+	elseif checkcollision(nextx,nexty,rims[2]) then
+		ball.dy = -ball.dy
+		ball.dx = -ball.dx
+	end
+		
+ ball.dx *= ball.f
+ ball.dy += ball.g
+ 
+ ball.dx=mid(-2,ball.dx,2)
+ ball.dy=mid(-2,ball.dy,2)
+	
+	-- hitbox visual for testing
+	ballhbx = nextx+ball.r
+	ballhby = nexty+ball.r
 	
 	-- check if ball hit wall
 	if nexty >=100 then
+		nexty=mid(0,nexty,100)
 		ball.dy = -ball.dy*ball.f
-	--		shake=0.1
+--		shake=0.1
 	end
-	if nextx <=0 or nextx >=100 then
+	if nextx <=0 or nextx >=120 then
+		nextx=mid(0,nextx,120)
 		ball.dx =  -ball.dx
-	--		shake=0.1
+--		shake=0.1
 	end
-	
-	
-	if checkcollision(ball.x,ball.y) then
-		if calcslope(ball.x,ball.y,ball.dx,ball.dy) then
-			ball.dx = -ball.dx
-			if ball.x < player.x+4 then
-				nextx=player.x-ball.r
-			else
-				nextx=player.x+8+ball.r
-			end
-		else
-			nexty=player.y-ball.r
-			if abs(player.dx)>2 then
-				if sign(player.x)==sign(ball.dx) then
-					setang(ball,mid(0,ball.ang-1,2))
-					else
-						if ball.ang==2 then
-							ball.dx=-ball.dx
-						else
-							setang(ball,mid(0,ball.ang+1,2))
-						end
-					end
-				end
-			end
-		end
 
 	-- move ball within frame
-	ball.x = mid(0,nextx,100)
-	ball.y = mid(0,nexty,100)
-end
-
-function checkcollision(bx,by)
-	-- check player closeness
-	cmxc = bx-comp[current].x
-	cmyc = by-comp[current].y
-	plxc = bx-player.x
-	plyc = by-player.y
+	ball.x = nextx
+	ball.y = nexty
 	
-	if abs(cmxc) < abs(plxc) or abs(cmyc) < abs(plyc) then
-		colcheckx = comp[current].x
-		colchecky = comp[current].y
-	elseif abs(cmxc)>abs(plxc) or abs(cmyc)>abs(plyc) then
-		colcheckx = player.x
-		colchecky = player.y
-	end
-	return not (bx-ball.r>colcheckx+8
-										or bx+ball.r<colcheckx
-										or by-ball.r > colchecky+8
-										or by+ball.r < colchecky)
-end
-
-function calcslope(bx,by,bdx,bdy)
-	--calculate slope
-	local slp = bdy / bdx
-	local cx, cy
-	if bdx == 0 then
-		return false
-	elseif bdy == 0 then
-		return true
-	elseif slp > 0 and bdx > 0 then
-			cx = player.x-bx
-			cy = player.y-by
-			return cx > 0 and cy/cx < slp
-	elseif slp < 0 and bdx > 0 then
-			cx = player.x - bx
-			cy = player.y + 8 - by
-			return cx > 0 and cy/cx >= slp
-	elseif slp > 0 and bdx < 0 then
-			cx = player.x + 8 - bx
-			cy = player.y + 8 - by
-			return cx < 0 and cy/cx <= slp
-	else
-			cx = player.x + 8 - bx
-			cy = player.y -by
-			return cx < 0 and cy/cx >= slp
+	if checkscore(ball.x,ball.y) then
+	
 	end
 end
 
-function setang(bl,ang)
- bl.ang=ang
-	if ang==2 then
-		bl.dx=0.50*sign(bl.dx)
-		bl.dy=1.30*sign(bl.dx)
-	elseif ang==0 then
-		bl.dx=1.30*sign(bl.dx)
-		bl.dy=0.50*sign(bl.dx)
-	else
-		bl.dx=1*sign(bl.dx)
-		bl.dy=1*sign(bl.dx)
-	end
+function checkcollision(bx,by,object)
+	return not (bx-ball.r> object.x+object.w
+										or bx+ball.r< object.x
+										or by-ball.r > object.y+object.h
+										or by+ball.r < object.y)
 end
 
-function sign(n)
- if n<0 then
- 	return -1
- elseif n>0 then
- 	return 1
- else
- 	return 0
-	end
+function calc_collision(obj1,obj2)
+	pcx = obj1.r+obj1.x-obj2.x
+	pcy = obj1.r+obj1.y-obj2.y
+
+	angs = atan2(pcx,pcy)
+
+	obj1.dy += sin(angs)*obj2.dy
+	obj1.dx += cos(angs)*obj2.dx
+	shake=0.1
 end
+
+
+function checkscore(bx,by)
+	
+end
+
 -->8
 -- juice
 
@@ -258,19 +219,149 @@ function screenshake()
 	end
 end
 __gfx__
-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0000000000ccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0070070000ccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-000770000ccccc000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0007700000ccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0070070000ccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0000000000c0c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0000000000c0c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0070070033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0007700033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0007700033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0070070033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000033333333bbbbbbbb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000009999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000090990900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000999099090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000099099000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000900000090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000999099090000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000090990900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000094994900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000999499490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000499499440000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000944444490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000999499490000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000094994900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000009999000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__label__
+555c555ccccc555c55cc555c555ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5c5c5ccccccc5c5cc5cccc5ccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+555c555ccccc555cc5cc555ccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5c5ccc5ccccccc5cc5cc5ccccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+555c555cc5cccc5c555c555ccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+555c5ccccccc555c555c555c555ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5c5c5ccccccccc5ccc5ccc5ccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+555c555ccccccc5cc55c555c555ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5c5c5c5ccccccc5ccc5c5ccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+555c555cc5cccc5c555c555c555ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+55cc55cc555c5cccc55ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5ccc5c5cc5cc5ccccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5ccc5c5cc5cc5ccccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+5ccc5c5cc5cc5ccccc5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+55cc5c5c555c555cc55ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+c555cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc555c
+c555cccccccccccccccccccccccccccccccccccccccccccccccccc5ccc555ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc555c
+c555cccccccccccccccccccccccccccccccccccccccccccccccccc5ccc5c5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc555c
+c555cccccccccccccccccccccccccccccccccccccccccccccccccc555c5c5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc555c
+c555cccccccccccccccccccccccccccccccccccccccccccccccccc5c5c5c5ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc555c
+5555cccccccccccccccccccccccccccccccccccccccccccccccccc555c555ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+5555cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+7000000000000000000000000000000000000000000000000000000000000000000000000ccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+0700000000000000000000000000000000000000000000000000000000000000000000000ccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+0070000000000000000000000000000000000000000000000000000000000000000000000ccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+0700000000000000000000000000000000000000000000000000000000000000000000000cccccccccccccccccccccccccccccccccccccccccccc55555555555
+7000000000000000000000000000000000000000000000000000000000000000000000000ccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+0000000000000000000000000000000000000000000000000000000000000000000000000ccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+5555ccccccccccccccccccccccccccccccccccccccccccccccccccccc0cc999099c9cccccccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+5555ccccccccccccccccccccccccccccccccccccccccccccccccccccc00cc99099cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+5555ccccccccccccccccccccccccccccccccccccccccccccccccccccccc090ccccc9cccccccccccccccccccccccccccccccccccccccccccccccccccccccc5555
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc999c99c9cccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc9c99c9ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc9999cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc55
+55444000000000444444444444444444444444444444444444444444444000000000444444444444444444444444444444444444444444444444444444444455
+55444048884440444444444444444444444444444444444444444444444055555440444444444444444444444444444444444444444444444444444444444455
+55444048884440444444444444444444444444444444444444444444444055555440444444444444444444444444444444444444444444444444444444444455
+55444088888440444444444444444444444444444444444444444444444055555440444444444444444444444444444444444444444444444444444444444455
+55444048884440444444444444444444444444444444444444444444444055555440444444444444444444444444444444444444444444444444444444444455
+55444048884440444444444444444444444444444444444444444444444055555440444444444444444444444444444444444444444444444444444444444455
+55444048484440444444444444444444444444444444444444444444444044444440444444444444444444444444444444444444444444444444444444444455
+55444048484440444444444444444444444444444444444444444444444044444440444444444444444444444444444444444444444444444444444444444455
+55444000000000444444444444444444444444444444444444444444444000000000444444444444444444444444444444444444444444444444444444444455
+55444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444455
+55444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444455
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
+
